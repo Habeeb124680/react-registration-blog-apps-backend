@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Post
+from .models import Post, Comment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -11,6 +11,16 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "name", "email"]
+
+
+class AuthorSerializer(serializers.ModelSerializer):
+    """What other people may see about an author: no email address."""
+
+    name = serializers.CharField(source="first_name")
+
+    class Meta:
+        model = User
+        fields = ["id", "name"]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -37,17 +47,21 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = AuthorSerializer(read_only=True)
     like_count = serializers.SerializerMethodField()
     liked_by_me = serializers.SerializerMethodField()
     is_own = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ["id", "text", "created_at", "author", "like_count", "liked_by_me", "is_own"]
+        fields = ["id", "text", "created_at", "author", "like_count", "liked_by_me", "is_own", "comment_count"]
 
     def get_like_count(self, obj):
         return obj.liked_by.count()
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
 
     def get_liked_by_me(self, obj):
         user = self.context["request"].user
@@ -61,4 +75,23 @@ class PostSerializer(serializers.ModelSerializer):
 class PostCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
+        fields = ["text"]
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True)
+    is_own = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ["id", "text", "created_at", "author", "is_own"]
+
+    def get_is_own(self, obj):
+        user = self.context["request"].user
+        return user.is_authenticated and obj.author_id == user.id
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
         fields = ["text"]

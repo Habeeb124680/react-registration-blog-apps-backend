@@ -5,8 +5,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
-from .models import Post
-from .serializers import RegisterSerializer, UserSerializer, PostSerializer, PostCreateSerializer
+from .models import Post, Comment
+from .serializers import (
+    RegisterSerializer,
+    UserSerializer,
+    PostSerializer,
+    PostCreateSerializer,
+    CommentSerializer,
+    CommentCreateSerializer,
+)
 
 
 def token_for_user(user):
@@ -110,4 +117,48 @@ class PostDeleteView(APIView):
             return Response({"detail": "You can only delete your own posts"}, status=403)
 
         post.delete()
+        return Response(status=204)
+
+
+class PostCommentsView(APIView):
+    """GET: anyone can read a post's comments. POST: logged-in users can add one."""
+
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            return Response({"detail": "Post not found"}, status=404)
+
+        comments = post.comments.select_related("author")
+        return Response(CommentSerializer(comments, many=True, context={"request": request}).data)
+
+    def post(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            return Response({"detail": "Post not found"}, status=404)
+
+        serializer = CommentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save(post=post, author=request.user)
+        return Response(
+            CommentSerializer(comment, context={"request": request}).data, status=201
+        )
+
+
+class CommentDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, comment_id):
+        try:
+            comment = Comment.objects.get(id=comment_id)
+        except Comment.DoesNotExist:
+            return Response({"detail": "Comment not found"}, status=404)
+
+        if comment.author_id != request.user.id:
+            return Response({"detail": "You can only delete your own comments"}, status=403)
+
+        comment.delete()
         return Response(status=204)
