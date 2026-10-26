@@ -55,7 +55,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ["id", "text", "created_at", "author", "like_count", "liked_by_me", "is_own", "comment_count"]
+        fields = ["id", "text", "created_at", "edited", "author", "like_count", "liked_by_me", "is_own", "comment_count"]
 
     def get_like_count(self, obj):
         return obj.liked_by.count()
@@ -84,7 +84,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "text", "created_at", "author", "is_own"]
+        fields = ["id", "text", "created_at", "edited", "author", "is_own"]
 
     def get_is_own(self, obj):
         user = self.context["request"].user

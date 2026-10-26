@@ -104,8 +104,30 @@ class LikeToggleView(APIView):
         return Response(PostSerializer(post, context={"request": request}).data)
 
 
-class PostDeleteView(APIView):
+class PostDetailView(APIView):
+    """PATCH: edit your own post's text. DELETE: delete your own post."""
+
     permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            return Response({"detail": "Post not found"}, status=404)
+
+        if post.author_id != request.user.id:
+            return Response({"detail": "You can only edit your own posts"}, status=403)
+
+        serializer = PostCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_text = serializer.validated_data["text"]
+
+        if new_text != post.text:  # saving unchanged text shouldn't mark it "edited"
+            post.text = new_text
+            post.edited = True
+            post.save(update_fields=["text", "edited"])
+
+        return Response(PostSerializer(post, context={"request": request}).data)
 
     def delete(self, request, post_id):
         try:
@@ -148,8 +170,30 @@ class PostCommentsView(APIView):
         )
 
 
-class CommentDeleteView(APIView):
+class CommentDetailView(APIView):
+    """PATCH: edit your own comment. DELETE: delete your own comment."""
+
     permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, comment_id):
+        try:
+            comment = Comment.objects.get(id=comment_id)
+        except Comment.DoesNotExist:
+            return Response({"detail": "Comment not found"}, status=404)
+
+        if comment.author_id != request.user.id:
+            return Response({"detail": "You can only edit your own comments"}, status=403)
+
+        serializer = CommentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_text = serializer.validated_data["text"]
+
+        if new_text != comment.text:
+            comment.text = new_text
+            comment.edited = True
+            comment.save(update_fields=["text", "edited"])
+
+        return Response(CommentSerializer(comment, context={"request": request}).data)
 
     def delete(self, request, comment_id):
         try:

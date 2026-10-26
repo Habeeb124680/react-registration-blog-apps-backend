@@ -1,19 +1,22 @@
-from django.contrib import admin
-from .models import Post, Comment
+from django.urls import path
+from .views import (
+    RegisterView,
+    LoginView,
+    MeView,
+    PostListCreateView,
+    LikeToggleView,
+    PostDetailView,
+    PostCommentsView,
+    CommentDetailView,
+)
 
-
-@admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
-    list_display = ("id", "author", "text", "created_at", "like_count")
-    list_filter = ("created_at",)
-    search_fields = ("text", "author__email", "author__first_name")
-
-    def like_count(self, obj):
-        return obj.liked_by.count()
-
-
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ("id", "post", "author", "text", "created_at")
-    list_filter = ("created_at",)
-    search_fields = ("text", "author__email", "author__first_name")
+urlpatterns = [
+    path("auth/register", RegisterView.as_view()),
+    path("auth/login", LoginView.as_view()),
+    path("auth/me", MeView.as_view()),
+    path("posts", PostListCreateView.as_view()),
+    path("posts/<int:post_id>/like", LikeToggleView.as_view()),
+    path("posts/<int:post_id>", PostDetailView.as_view()),
+    path("posts/<int:post_id>/comments", PostCommentsView.as_view()),
+    path("comments/<int:comment_id>", CommentDetailView.as_view()),
+]

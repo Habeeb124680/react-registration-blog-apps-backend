@@ -5,9 +5,9 @@ from .views import (
     MeView,
     PostListCreateView,
     LikeToggleView,
-    PostDeleteView,
+    PostDetailView,
     PostCommentsView,
-    CommentDeleteView,
+    CommentDetailView,
 )
 
 urlpatterns = [
@@ -16,7 +16,7 @@ urlpatterns = [
     path("auth/me", MeView.as_view()),
     path("posts", PostListCreateView.as_view()),
     path("posts/<int:post_id>/like", LikeToggleView.as_view()),
-    path("posts/<int:post_id>", PostDeleteView.as_view()),
+    path("posts/<int:post_id>", PostDetailView.as_view()),
     path("posts/<int:post_id>/comments", PostCommentsView.as_view()),
-    path("comments/<int:comment_id>", CommentDeleteView.as_view()),
+    path("comments/<int:comment_id>", CommentDetailView.as_view()),
 ]
